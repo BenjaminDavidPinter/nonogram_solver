@@ -37,7 +37,11 @@ pub fn benchmark_solve(c: &mut Criterion) {
         ],
     );
 
-    board.solve();
+    c.bench_function("Solve", |b| {
+        b.iter(|| {
+            board.solve(); // The function you're benchmarking
+        });
+    });
 
     board.draw_board_to_console();
 }

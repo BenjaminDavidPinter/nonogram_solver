@@ -1,7 +1,10 @@
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
 pub struct Nonogram {
     pub width: usize,
     pub height: usize,
-    pub board: Vec<Vec<bool>>,
+    pub board: Vec<Vec<SpaceStatus>>,
     pub column_hints: Vec<Vec<Hint>>,
     pub row_hints: Vec<Vec<Hint>>,
 }
@@ -10,7 +13,7 @@ impl Nonogram {
     pub fn new(column_hints: Vec<Vec<Hint>>, row_hints: Vec<Vec<Hint>>) -> Nonogram {
         let width = column_hints.len();
         let height = row_hints.len();
-        let board = vec![vec![false; height]; width];
+        let board = vec![vec![SpaceStatus::Unknown; height]; width];
         Nonogram {
             width,
             height,
@@ -20,12 +23,44 @@ impl Nonogram {
         }
     }
 
-    pub fn set_square(&mut self, row: usize, column: usize, filled_in: bool) {
-        self.board[row][column] = filled_in;
+    pub fn set_square(&mut self, row: usize, column: usize, fill_status: SpaceStatus) {
+        self.board[row][column] = fill_status;
     }
 
     pub fn solve(&mut self) {
         self.solve_strat_finished_columns();
+        self.solve_strat_finished_rows();
+    }
+
+    pub fn solve_strat_finished_rows(&mut self) {
+        for row_hint_collection in 0..self.row_hints.len() {
+            if self.row_hints[row_hint_collection]
+                .iter()
+                .map(|f| f.hint)
+                .sum::<i32>()
+                + (self.row_hints[row_hint_collection].len() - 1) as i32
+                == self.width.try_into().unwrap()
+            {
+                let mut row_position = self.width - 1;
+                let mut finished_iter = false;
+                for hint in 0..self.row_hints[row_hint_collection].len() {
+                    let remaining_iterations = self.row_hints[row_hint_collection][hint].hint;
+                    for _ in 0..remaining_iterations {
+                        self.set_square(row_hint_collection, row_position, SpaceStatus::Filled);
+                        if row_position != 0 {
+                            row_position -= 1;
+                        } else {
+                            finished_iter = true;
+                        }
+                    }
+                    if !finished_iter {
+                        self.set_square(row_hint_collection, row_position, SpaceStatus::NotFilled);
+                    }
+                    self.column_hints[row_hint_collection][hint].fulfilled = true;
+                    row_position -= 1;
+                }
+            }
+        }
     }
 
     pub fn solve_strat_finished_columns(&mut self) {
@@ -42,14 +77,23 @@ impl Nonogram {
                 for hint in 0..self.column_hints[column_hint_collection].len() {
                     let remaining_iterations = self.column_hints[column_hint_collection][hint].hint;
                     for _ in 0..remaining_iterations {
-                        self.set_square(column_position, column_hint_collection, true);
+                        self.set_square(
+                            column_position,
+                            column_hint_collection,
+                            SpaceStatus::Filled,
+                        );
                         if column_position != 0 {
                             column_position -= 1;
+                        } else {
                             finished_iter = true;
                         }
                     }
                     if !finished_iter {
-                        self.set_square(column_position, column_hint_collection, false);
+                        self.set_square(
+                            column_position,
+                            column_hint_collection,
+                            SpaceStatus::NotFilled,
+                        );
                     }
                     self.column_hints[column_hint_collection][hint].fulfilled = true;
                     column_position -= 1;
@@ -59,6 +103,8 @@ impl Nonogram {
     }
 
     pub fn draw_board_to_console(&self) {
+        let mut stdout = StandardStream::stdout(ColorChoice::Always);
+
         let max_column_hint_depth = self
             .column_hints
             .iter()
@@ -103,11 +149,23 @@ impl Nonogram {
                 print!(" {} ", hint.hint)
             }
             for board_space in &self.board[hint_column] {
-                if *board_space {
-                    print!("[@]");
-                } else {
-                    print!("[ ]");
-                }
+                match board_space {
+                    SpaceStatus::Filled => {
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)));
+                        _ = write!(&mut stdout, "[O]");
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
+                    }
+                    SpaceStatus::NotFilled => {
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)));
+                        _ = write!(&mut stdout, "[X]");
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
+                    }
+                    SpaceStatus::Unknown => {
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
+                        _ = write!(&mut stdout, "[ ]");
+                        _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
+                    }
+                };
             }
             println!();
         }
@@ -127,4 +185,11 @@ impl Hint {
             fulfilled: false,
         }
     }
+}
+
+#[derive(Clone)]
+pub enum SpaceStatus {
+    Filled,
+    NotFilled,
+    Unknown,
 }
