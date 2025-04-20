@@ -25,6 +25,10 @@ impl Nonogram {
     }
 
     pub fn solve(&mut self) {
+        self.solve_strat_finished_columns();
+    }
+
+    pub fn solve_strat_finished_columns(&mut self) {
         for column_hint in 0..self.column_hints.len() {
             if self.column_hints[column_hint]
                 .iter()
@@ -47,6 +51,7 @@ impl Nonogram {
                     if !finished_iter {
                         self.set_square(column_position, column_hint, false);
                     }
+                    self.column_hints[column_hint][hint].fulfilled = true;
                     column_position -= 1;
                 }
             }
