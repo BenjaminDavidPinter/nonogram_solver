@@ -29,29 +29,29 @@ impl Nonogram {
     }
 
     pub fn solve_strat_finished_columns(&mut self) {
-        for column_hint in 0..self.column_hints.len() {
-            if self.column_hints[column_hint]
+        for column_hint_collection in 0..self.column_hints.len() {
+            if self.column_hints[column_hint_collection]
                 .iter()
                 .map(|f| f.hint)
                 .sum::<i32>()
-                + (self.column_hints[column_hint].len() - 1) as i32
+                + (self.column_hints[column_hint_collection].len() - 1) as i32
                 == self.height.try_into().unwrap()
             {
                 let mut column_position = self.height - 1;
                 let mut finished_iter = false;
-                for hint in 0..self.column_hints[column_hint].len() {
-                    let remaining_iterations = self.column_hints[column_hint][hint].hint;
+                for hint in 0..self.column_hints[column_hint_collection].len() {
+                    let remaining_iterations = self.column_hints[column_hint_collection][hint].hint;
                     for _ in 0..remaining_iterations {
-                        self.set_square(column_position, column_hint, true);
+                        self.set_square(column_position, column_hint_collection, true);
                         if column_position != 0 {
                             column_position -= 1;
                             finished_iter = true;
                         }
                     }
                     if !finished_iter {
-                        self.set_square(column_position, column_hint, false);
+                        self.set_square(column_position, column_hint_collection, false);
                     }
-                    self.column_hints[column_hint][hint].fulfilled = true;
+                    self.column_hints[column_hint_collection][hint].fulfilled = true;
                     column_position -= 1;
                 }
             }
