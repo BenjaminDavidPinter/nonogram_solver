@@ -24,8 +24,33 @@ impl Nonogram {
         self.board[row][column] = filled_in;
     }
 
-    pub fn solve(&self) -> Nonogram {
-        todo!("Implement solver");
+    pub fn solve(&mut self) {
+        for column_hint in 0..self.column_hints.len() {
+            if self.column_hints[column_hint]
+                .iter()
+                .map(|f| f.hint)
+                .sum::<i32>()
+                + (self.column_hints[column_hint].len() - 1) as i32
+                == self.height.try_into().unwrap()
+            {
+                let mut column_position = self.height - 1;
+                let mut finished_iter = false;
+                for hint in 0..self.column_hints[column_hint].len() {
+                    let remaining_iterations = self.column_hints[column_hint][hint].hint;
+                    for _ in 0..remaining_iterations {
+                        self.set_square(column_position, column_hint, true);
+                        if column_position != 0 {
+                            column_position -= 1;
+                            finished_iter = true;
+                        }
+                    }
+                    if !finished_iter {
+                        self.set_square(column_position, column_hint, false);
+                    }
+                    column_position -= 1;
+                }
+            }
+        }
     }
 
     pub fn draw_board_to_console(&self) {

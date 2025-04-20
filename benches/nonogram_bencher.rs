@@ -37,6 +37,8 @@ pub fn benchmark_solve(c: &mut Criterion) {
         ],
     );
 
+    board.solve();
+
     board.draw_board_to_console();
 }
 
