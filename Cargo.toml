@@ -1,0 +1,14 @@
+[package]
+name = "nonogram_solver"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+criterion = "0.5"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "nonogram_bencher"
+harness = false
