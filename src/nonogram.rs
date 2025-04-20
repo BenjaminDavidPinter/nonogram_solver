@@ -1,5 +1,3 @@
-use std::{cmp::max, hint};
-
 pub struct Nonogram {
     pub width: usize,
     pub height: usize,
@@ -47,7 +45,7 @@ impl Nonogram {
             for _ in 0..max_row_hint_depth {
                 print!("  ");
             }
-            print!("  ");
+            print!("   ");
             let hint_row_inverse = max_column_hint_depth - hint_row;
             let mut printable_rows = self
                 .column_hints
