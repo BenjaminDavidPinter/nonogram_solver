@@ -23,16 +23,75 @@ impl Nonogram {
         }
     }
 
-    pub fn set_square(&mut self, row: usize, column: usize, fill_status: SpaceStatus) {
-        self.board[row][column] = fill_status;
-    }
-
     pub fn solve(&mut self) {
         self.solve_strat_finished_columns();
         self.solve_strat_finished_rows();
     }
 
+    pub fn set_square(&mut self, row: usize, column: usize, fill_status: SpaceStatus) {
+        self.board[row][column] = fill_status;
+    }
+
+    pub fn get_board_state(&self) -> [(SpaceStatus, usize); 3] {
+        return [
+            (
+                SpaceStatus::Filled,
+                self.board
+                    .iter()
+                    .flatten()
+                    .filter(|x| **x == SpaceStatus::Filled)
+                    .collect::<Vec<_>>()
+                    .len(),
+            ),
+            (
+                SpaceStatus::NotFilled,
+                self.board
+                    .iter()
+                    .flatten()
+                    .filter(|x| **x == SpaceStatus::NotFilled)
+                    .collect::<Vec<_>>()
+                    .len(),
+            ),
+            (
+                SpaceStatus::Unknown,
+                self.board
+                    .iter()
+                    .flatten()
+                    .filter(|x| **x == SpaceStatus::Unknown)
+                    .collect::<Vec<_>>()
+                    .len(),
+            ),
+        ];
+    }
+
+    pub fn is_square_filled(&self, row: usize, column: usize) -> bool {
+        return match self.board[row][column] {
+            SpaceStatus::Filled => true,
+            SpaceStatus::NotFilled => true,
+            SpaceStatus::Unknown => false,
+        };
+    }
+
+    pub fn get_rightmost_unsolved_hint_for_row(&self, row: usize) -> Option<Hint> {
+        let target_row_hints = self.row_hints[row];
+        let rightmost_hint = target_row_hints
+            .iter()
+            .rev()
+            .filter(|x| !x.fulfilled)
+            .collect::<Vec<_>>()
+            .first();
+        match rightmost_hint {
+            Option::None => Option::None,
+            Option::Some(val) => Option::Some(val.clone()),
+        }
+    }
+
     pub fn solve_strat_finished_rows(&mut self) {
+        /*
+        The two easiest solve strategies are finished rows, and finished columns. They both abide by the same philosophy;
+        If all of the hints in a row, plus the length of the hint array, equates to the width of the board, then there
+        is only one configuration for that row, and we can fill it out.
+        */
         for row_hint_collection in 0..self.row_hints.len() {
             if self.row_hints[row_hint_collection]
                 .iter()
@@ -46,7 +105,9 @@ impl Nonogram {
                 for hint in 0..self.row_hints[row_hint_collection].len() {
                     let remaining_iterations = self.row_hints[row_hint_collection][hint].hint;
                     for _ in 0..remaining_iterations {
-                        self.set_square(row_hint_collection, row_position, SpaceStatus::Filled);
+                        if !self.is_square_filled(row_hint_collection, row_position) {
+                            self.set_square(row_hint_collection, row_position, SpaceStatus::Filled);
+                        }
                         if row_position != 0 {
                             row_position -= 1;
                         } else {
@@ -54,7 +115,13 @@ impl Nonogram {
                         }
                     }
                     if !finished_iter {
-                        self.set_square(row_hint_collection, row_position, SpaceStatus::NotFilled);
+                        if !self.is_square_filled(row_hint_collection, row_position) {
+                            self.set_square(
+                                row_hint_collection,
+                                row_position,
+                                SpaceStatus::NotFilled,
+                            );
+                        }
                     }
                     self.column_hints[row_hint_collection][hint].fulfilled = true;
                     row_position -= 1;
@@ -64,6 +131,11 @@ impl Nonogram {
     }
 
     pub fn solve_strat_finished_columns(&mut self) {
+        /*
+        The two easiest solve strategies are finished rows, and finished columns. They both abide by the same philosophy;
+        If all of the hints in a column, plus the length of the hint array, equates to the height of the board, then there
+        is only one configuration for that column, and we can fill it out.
+        */
         for column_hint_collection in 0..self.column_hints.len() {
             if self.column_hints[column_hint_collection]
                 .iter()
@@ -97,6 +169,20 @@ impl Nonogram {
                     }
                     self.column_hints[column_hint_collection][hint].fulfilled = true;
                     column_position -= 1;
+                }
+            }
+        }
+    }
+
+    pub fn solve_strat_ended_rows(&mut self) {
+        for row in 0..self.board.len() {
+            for i in 0..self.board[row].len() {
+                let column = self.board[row].len() - i;
+                let potential_hint: Option<Hint> = Option::None;
+                match self.board[row][column] {
+                    SpaceStatus::Filled => {}
+                    SpaceStatus::NotFilled => {}
+                    SpaceStatus::Unknown => {}
                 }
             }
         }
@@ -187,7 +273,7 @@ impl Hint {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SpaceStatus {
     Filled,
     NotFilled,
