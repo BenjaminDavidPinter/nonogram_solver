@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, thread::current};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub struct Nonogram {
@@ -72,18 +72,19 @@ impl Nonogram {
         };
     }
 
-    pub fn get_rightmost_unsolved_hint_for_row(&self, row: usize) -> Option<Hint> {
-        let target_row_hints = self.row_hints[row];
-        let rightmost_hint = target_row_hints
+    pub fn get_rightmost_unsolved_hint_for_row(&self, row: usize) -> Option<(usize, &Hint)> {
+        self.row_hints[row]
             .iter()
+            .enumerate()
             .rev()
-            .filter(|x| !x.fulfilled)
-            .collect::<Vec<_>>()
-            .first();
-        match rightmost_hint {
-            Option::None => Option::None,
-            Option::Some(val) => Option::Some(val.clone()),
-        }
+            .find(|x| !x.1.fulfilled)
+    }
+
+    pub fn get_leftmost_unsolved_hint_for_row(&self, row: usize) -> Option<(usize, &Hint)> {
+        self.row_hints[row]
+            .iter()
+            .enumerate()
+            .find(|x| !x.1.fulfilled)
     }
 
     pub fn solve_strat_finished_rows(&mut self) {
@@ -174,16 +175,38 @@ impl Nonogram {
         }
     }
 
+    pub fn resolve_state(
+        state: Option<SolveState>,
+        next_block: &SpaceStatus,
+    ) -> Option<SolveState> {
+        match (state, next_block) {
+            (None, SpaceStatus::Filled) => Some(SolveState::WithinBlock),
+            (None, SpaceStatus::NotFilled) => Some(SolveState::UnfilledSpace),
+            (None, SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
+            (Some(_), SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
+            (Some(val), SpaceStatus::Filled) => match val {
+                SolveState::BlockEnd => Some(SolveState::WithinBlock),
+                SolveState::WithinBlock => Some(SolveState::WithinBlock),
+                SolveState::EmptySpace => Some(SolveState::WithinBlock),
+                SolveState::UnfilledSpace => Some(SolveState::WithinBlock),
+            },
+            (Some(val), SpaceStatus::NotFilled) => match val {
+                SolveState::BlockEnd => Some(SolveState::BlockEnd),
+                SolveState::WithinBlock => Some(SolveState::BlockEnd),
+                SolveState::EmptySpace => Some(SolveState::UnfilledSpace),
+                SolveState::UnfilledSpace => Some(SolveState::UnfilledSpace),
+            },
+        }
+    }
+
     pub fn solve_strat_ended_rows(&mut self) {
         for row in 0..self.board.len() {
-            for i in 0..self.board[row].len() {
-                let column = self.board[row].len() - i;
-                let potential_hint: Option<Hint> = Option::None;
-                match self.board[row][column] {
-                    SpaceStatus::Filled => {}
-                    SpaceStatus::NotFilled => {}
-                    SpaceStatus::Unknown => {}
-                }
+            let potential_hint: Option<(usize, &Hint)> =
+                self.get_rightmost_unsolved_hint_for_row(row);
+            let mut current_state: Option<SolveState> = Option::None;
+            for column in 0..self.board[row].len() {
+                let column = self.board[row].len() - column;
+                current_state = Nonogram::resolve_state(current_state, &self.board[row][column]);
             }
         }
     }
@@ -278,4 +301,12 @@ pub enum SpaceStatus {
     Filled,
     NotFilled,
     Unknown,
+}
+
+#[derive(Clone)]
+pub enum SolveState {
+    WithinBlock,
+    UnfilledSpace,
+    BlockEnd,
+    EmptySpace,
 }
