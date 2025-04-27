@@ -1,4 +1,4 @@
-use std::{io::Write, thread::current};
+use std::{fs::OpenOptions, io::Write, num::NonZero, thread::current};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub struct Nonogram {
@@ -72,8 +72,11 @@ impl Nonogram {
         };
     }
 
-    pub fn get_rightmost_unsolved_hint_for_row(&self, row: usize) -> Option<(usize, &Hint)> {
-        self.row_hints[row]
+    pub fn get_rightmost_unsolved_hint_for_row(
+        row: usize,
+        board: &Nonogram,
+    ) -> Option<(usize, &Hint)> {
+        board.row_hints[row]
             .iter()
             .enumerate()
             .rev()
@@ -104,8 +107,7 @@ impl Nonogram {
                 let mut row_position = self.width - 1;
                 let mut finished_iter = false;
                 for hint in 0..self.row_hints[row_hint_collection].len() {
-                    let remaining_iterations = self.row_hints[row_hint_collection][hint].hint;
-                    for _ in 0..remaining_iterations {
+                    for _ in 0..self.row_hints[row_hint_collection][hint].hint {
                         if !self.is_square_filled(row_hint_collection, row_position) {
                             self.set_square(row_hint_collection, row_position, SpaceStatus::Filled);
                         }
@@ -123,9 +125,9 @@ impl Nonogram {
                                 SpaceStatus::NotFilled,
                             );
                         }
+                        row_position -= 1;
                     }
-                    self.column_hints[row_hint_collection][hint].fulfilled = true;
-                    row_position -= 1;
+                    self.row_hints[row_hint_collection][hint].fulfill();
                 }
             }
         }
@@ -167,32 +169,32 @@ impl Nonogram {
                             column_hint_collection,
                             SpaceStatus::NotFilled,
                         );
+                        column_position -= 1;
                     }
                     self.column_hints[column_hint_collection][hint].fulfilled = true;
-                    column_position -= 1;
                 }
             }
         }
     }
 
     pub fn resolve_state(
-        state: Option<SolveState>,
+        state: &Option<SolveState>,
         next_block: &SpaceStatus,
     ) -> Option<SolveState> {
         match (state, next_block) {
-            (None, SpaceStatus::Filled) => Some(SolveState::WithinBlock),
+            (None, SpaceStatus::Filled) => Some(SolveState::WithinBlock(1)),
             (None, SpaceStatus::NotFilled) => Some(SolveState::UnfilledSpace),
             (None, SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
             (Some(_), SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
             (Some(val), SpaceStatus::Filled) => match val {
-                SolveState::BlockEnd => Some(SolveState::WithinBlock),
-                SolveState::WithinBlock => Some(SolveState::WithinBlock),
-                SolveState::EmptySpace => Some(SolveState::WithinBlock),
-                SolveState::UnfilledSpace => Some(SolveState::WithinBlock),
+                SolveState::BlockEnd => Some(SolveState::WithinBlock(1)),
+                SolveState::WithinBlock(len) => Some(SolveState::WithinBlock(len + 1)),
+                SolveState::EmptySpace => Some(SolveState::WithinBlock(1)),
+                SolveState::UnfilledSpace => Some(SolveState::WithinBlock(1)),
             },
             (Some(val), SpaceStatus::NotFilled) => match val {
                 SolveState::BlockEnd => Some(SolveState::BlockEnd),
-                SolveState::WithinBlock => Some(SolveState::BlockEnd),
+                SolveState::WithinBlock(_) => Some(SolveState::BlockEnd),
                 SolveState::EmptySpace => Some(SolveState::UnfilledSpace),
                 SolveState::UnfilledSpace => Some(SolveState::UnfilledSpace),
             },
@@ -201,13 +203,70 @@ impl Nonogram {
 
     pub fn solve_strat_ended_rows(&mut self) {
         for row in 0..self.board.len() {
-            let potential_hint: Option<(usize, &Hint)> =
-                self.get_rightmost_unsolved_hint_for_row(row);
-            let mut current_state: Option<SolveState> = Option::None;
+            let potential_hint = Nonogram::get_rightmost_unsolved_hint_for_row(row, &self);
+            let hint_size = match potential_hint {
+                Option::None => 0,
+                Some(val) => val.1.hint,
+            };
+            let mut previous_state: Option<SolveState> = Option::None;
+            let mut fillmode = false;
+
             for column in 0..self.board[row].len() {
-                let column = self.board[row].len() - column;
-                current_state = Nonogram::resolve_state(current_state, &self.board[row][column]);
+                let column = self.board[row].len() - column - 1;
+                let mut current_state =
+                    Nonogram::resolve_state(&previous_state, &self.board[row][column]);
+                println!(
+                    "{}{} - {:?} -> {:?}",
+                    row, column, previous_state, current_state
+                );
+                match previous_state {
+                    Option::None => match current_state {
+                    Option::Some(SolveState::WithinBlock(val)) => fillmode = true,
+                    Option::None => fillmode = false,
+                    Option::Some(SolveState::BlockEnd) => fillmode = false,
+                    Option::Some(SolveState::EmptySpace) => fillmode = false,
+                    Option::Some(SolveState::UnfilledSpace) => fillmode = false,
+                    _ => fillmode = false,
+                    },
+                    Option::Some(SolveState::WithinBlock(val)) => match current_state {
+                        Option::Some(SolveState::WithinBlock(val)) => fillmode = true,
+                        Some(SolveState::EmptySpace) => fillmode = true,
+                        _ => fillmode = false,
+                    },
+                    _ => fillmode = false,
+                }
+                if fillmode {
+                    match &current_state {
+                        Option::Some(SolveState::WithinBlock(val)) => {
+                            if val < &(hint_size as usize) {
+                                self.board[row][column] = SpaceStatus::Filled
+                            }
+                            else
+                            {
+                                self.board[row][column] = SpaceStatus::NotFilled;
+                            }
+                        },
+                        Option::Some(SolveState::EmptySpace) => {
+                            match previous_state {
+                                Option::Some(SolveState::WithinBlock(val)) => {
+                                    if val < (hint_size as usize) {
+                                        self.board[row][column] = SpaceStatus::Filled;
+                                        current_state = Option::Some(SolveState::WithinBlock(val+1));
+                                    }
+                                    else
+                                    {
+                                        self.board[row][column] = SpaceStatus::NotFilled;
+                                    }
+                                },
+                                _ => self.board[row][column] = SpaceStatus::NotFilled
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+                previous_state = current_state;
             }
+            println!();
         }
     }
 
@@ -281,7 +340,7 @@ impl Nonogram {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Hint {
     pub hint: i32,
     pub fulfilled: bool,
@@ -294,6 +353,10 @@ impl Hint {
             fulfilled: false,
         }
     }
+
+    pub fn fulfill(&mut self) {
+        self.fulfilled = true;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -303,9 +366,9 @@ pub enum SpaceStatus {
     Unknown,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SolveState {
-    WithinBlock,
+    WithinBlock(usize),
     UnfilledSpace,
     BlockEnd,
     EmptySpace,

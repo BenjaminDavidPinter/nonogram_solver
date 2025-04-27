@@ -1,15 +1,7 @@
-use criterion::{Criterion, criterion_group, criterion_main};
-use nonogram_solver::nonogram::{Hint, Nonogram};
+use crate::nonogram::{Hint, Nonogram};
 
-/*
-        1
-     3  1  1
-  2 [x][x][ ]
-1 1 [x][ ][x]
-  2 [x][x][ ]
-*/
-
-pub fn benchmark_solve(c: &mut Criterion) {
+#[test]
+pub fn test() {
     let mut board = Nonogram::new(
         vec![
             vec![Hint::new(1), Hint::new(2)],
@@ -37,12 +29,7 @@ pub fn benchmark_solve(c: &mut Criterion) {
         ],
     );
 
-    c.bench_function("Solve", |b| {
-        b.iter(|| {
-            board.solve(); // The function you're benchmarking
-        });
-    });
-
+    board.solve();
     board.solve_strat_ended_rows();
 
     println!("----------------------------------");
@@ -52,8 +39,8 @@ pub fn benchmark_solve(c: &mut Criterion) {
     println!();
     println!("{:?}", board.get_board_state());
     println!();
-    println!("-----------------------------------")
-}
+    println!("-----------------------------------");
 
-criterion_group!(benches, benchmark_solve);
-criterion_main!(benches);
+
+    assert_eq!(true, true);
+}
