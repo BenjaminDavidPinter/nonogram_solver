@@ -10,49 +10,7 @@ use nonogram_solver::nonogram::{Hint, Nonogram};
 */
 
 pub fn benchmark_solve(c: &mut Criterion) {
-    let mut board = Nonogram::new(
-        vec![
-            vec![Hint::new(1), Hint::new(2)],
-            vec![Hint::new(1), Hint::new(3)],
-            vec![Hint::new(1)],
-            vec![Hint::new(3)],
-            vec![Hint::new(4)],
-            vec![Hint::new(5), Hint::new(2)],
-            vec![Hint::new(5), Hint::new(2)],
-            vec![Hint::new(1), Hint::new(2), Hint::new(2)],
-            vec![Hint::new(1), Hint::new(4), Hint::new(3)],
-            vec![Hint::new(4), Hint::new(1), Hint::new(3)],
-        ],
-        vec![
-            vec![Hint::new(2), Hint::new(5)],
-            vec![Hint::new(2), Hint::new(5)],
-            vec![Hint::new(1), Hint::new(2)],
-            vec![Hint::new(1)],
-            vec![Hint::new(1), Hint::new(2)],
-            vec![Hint::new(6)],
-            vec![Hint::new(7)],
-            vec![Hint::new(2), Hint::new(4), Hint::new(2)],
-            vec![Hint::new(2), Hint::new(1)],
-            vec![Hint::new(5)],
-        ],
-    );
-
-    c.bench_function("Solve", |b| {
-        b.iter(|| {
-            board.solve(); // The function you're benchmarking
-        });
-    });
-
-    board.solve_strat_ended_rows();
-
-    println!("----------------------------------");
-    println!();
-    println!();
-    board.draw_board_to_console();
-    println!();
-    println!("{:?}", board.get_board_state());
-    println!();
-    println!("-----------------------------------")
+   todo!("For later implementation")
 }
 
 criterion_group!(benches, benchmark_solve);

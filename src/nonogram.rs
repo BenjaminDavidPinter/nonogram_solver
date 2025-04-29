@@ -1,4 +1,4 @@
-use std::{fs::OpenOptions, io::Write, num::NonZero, thread::current};
+use std::{io::Write};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub struct Nonogram {
@@ -13,7 +13,7 @@ impl Nonogram {
     pub fn new(column_hints: Vec<Vec<Hint>>, row_hints: Vec<Vec<Hint>>) -> Nonogram {
         let width = column_hints.len();
         let height = row_hints.len();
-        let board = vec![vec![SpaceStatus::Unknown; height]; width];
+        let board = vec![vec![SpaceStatus::Empty; height]; width];
         Nonogram {
             width,
             height,
@@ -23,53 +23,36 @@ impl Nonogram {
         }
     }
 
-    pub fn solve(&mut self) {
-        self.solve_strat_finished_columns();
-        self.solve_strat_finished_rows();
-    }
-
-    pub fn set_square(&mut self, row: usize, column: usize, fill_status: SpaceStatus) {
-        self.board[row][column] = fill_status;
-    }
-
     pub fn get_board_state(&self) -> [(SpaceStatus, usize); 3] {
         return [
             (
-                SpaceStatus::Filled,
+                SpaceStatus::O,
                 self.board
                     .iter()
                     .flatten()
-                    .filter(|x| **x == SpaceStatus::Filled)
+                    .filter(|x| **x == SpaceStatus::O)
                     .collect::<Vec<_>>()
                     .len(),
             ),
             (
-                SpaceStatus::NotFilled,
+                SpaceStatus::X,
                 self.board
                     .iter()
                     .flatten()
-                    .filter(|x| **x == SpaceStatus::NotFilled)
+                    .filter(|x| **x == SpaceStatus::X)
                     .collect::<Vec<_>>()
                     .len(),
             ),
             (
-                SpaceStatus::Unknown,
+                SpaceStatus::Empty,
                 self.board
                     .iter()
                     .flatten()
-                    .filter(|x| **x == SpaceStatus::Unknown)
+                    .filter(|x| **x == SpaceStatus::Empty)
                     .collect::<Vec<_>>()
                     .len(),
             ),
         ];
-    }
-
-    pub fn is_square_filled(&self, row: usize, column: usize) -> bool {
-        return match self.board[row][column] {
-            SpaceStatus::Filled => true,
-            SpaceStatus::NotFilled => true,
-            SpaceStatus::Unknown => false,
-        };
     }
 
     pub fn get_rightmost_unsolved_hint_for_row(
@@ -83,203 +66,85 @@ impl Nonogram {
             .find(|x| !x.1.fulfilled)
     }
 
-    pub fn get_leftmost_unsolved_hint_for_row(&self, row: usize) -> Option<(usize, &Hint)> {
-        self.row_hints[row]
-            .iter()
-            .enumerate()
-            .find(|x| !x.1.fulfilled)
+    pub fn write_row_hint_to_board(nonogram: &mut Nonogram, hint: &mut Hint, row: usize, starting_index: usize) {
+        for column in starting_index..starting_index + hint.hint as usize {
+            Nonogram::check_set(nonogram, row, column);
+            nonogram.board[row][column] = SpaceStatus::O;
+        }
+
+        hint.fulfilled = true;
     }
 
-    pub fn solve_strat_finished_rows(&mut self) {
-        /*
-        The two easiest solve strategies are finished rows, and finished columns. They both abide by the same philosophy;
-        If all of the hints in a row, plus the length of the hint array, equates to the width of the board, then there
-        is only one configuration for that row, and we can fill it out.
-        */
-        for row_hint_collection in 0..self.row_hints.len() {
-            if self.row_hints[row_hint_collection]
-                .iter()
-                .map(|f| f.hint)
-                .sum::<i32>()
-                + (self.row_hints[row_hint_collection].len() - 1) as i32
-                == self.width.try_into().unwrap()
-            {
-                let mut row_position = self.width - 1;
-                let mut finished_iter = false;
-                for hint in 0..self.row_hints[row_hint_collection].len() {
-                    for _ in 0..self.row_hints[row_hint_collection][hint].hint {
-                        if !self.is_square_filled(row_hint_collection, row_position) {
-                            self.set_square(row_hint_collection, row_position, SpaceStatus::Filled);
-                        }
-                        if row_position != 0 {
-                            row_position -= 1;
-                        } else {
-                            finished_iter = true;
-                        }
-                    }
-                    if !finished_iter {
-                        if !self.is_square_filled(row_hint_collection, row_position) {
-                            self.set_square(
-                                row_hint_collection,
-                                row_position,
-                                SpaceStatus::NotFilled,
-                            );
-                        }
-                        row_position -= 1;
-                    }
-                    self.row_hints[row_hint_collection][hint].fulfill();
+    pub fn write_column_hint_to_board(nonogram: &mut Nonogram, hint: &mut Hint, column: usize, starting_index: usize) {
+        for row in starting_index..starting_index + hint.hint as usize {
+            Nonogram::check_set(nonogram, row, column);
+            nonogram.board[row][column] = SpaceStatus::O;
+        }
+
+        hint.fulfilled = true;
+    }
+
+    pub fn locate_finished_rows(nonogram: &Nonogram) -> Vec<usize> {
+        nonogram.row_hints
+            .iter().enumerate()
+            .filter(|(_, hints)| {
+                let mut total_occupied_space: usize = hints
+                    .iter()
+                    .map(|x| x.hint as usize)
+                    .sum();
+
+                total_occupied_space += hints.len() - 1;
+
+                if total_occupied_space == nonogram.width {
+                    return true;
                 }
-            }
+                else {
+                    return false;
+                }
+            })
+            .map(|(row_index, _)| row_index)
+            .collect()
+    }
+
+    pub fn locate_finished_columns(nonogram: &Nonogram) -> Vec<usize> {
+        nonogram.column_hints
+            .iter().enumerate()
+            .filter(|(_, hints)| {
+                let mut total_occupied_space: usize = hints
+                    .iter()
+                    .map(|x| x.hint as usize)
+                    .sum();
+
+                total_occupied_space += hints.len() - 1;
+
+                if total_occupied_space == nonogram.width {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            })
+            .map(|(row_index, _)| row_index)
+            .collect()
+    }
+
+    pub fn check_set(nonogram: &Nonogram, row: usize, column: usize)
+    {
+        if nonogram.board[row][column] != SpaceStatus::Empty {
+            panic!("Attempt to set previously set space")
         }
     }
 
-    pub fn solve_strat_finished_columns(&mut self) {
-        /*
-        The two easiest solve strategies are finished rows, and finished columns. They both abide by the same philosophy;
-        If all of the hints in a column, plus the length of the hint array, equates to the height of the board, then there
-        is only one configuration for that column, and we can fill it out.
-        */
-        for column_hint_collection in 0..self.column_hints.len() {
-            if self.column_hints[column_hint_collection]
-                .iter()
-                .map(|f| f.hint)
-                .sum::<i32>()
-                + (self.column_hints[column_hint_collection].len() - 1) as i32
-                == self.height.try_into().unwrap()
-            {
-                let mut column_position = self.height - 1;
-                let mut finished_iter = false;
-                for hint in 0..self.column_hints[column_hint_collection].len() {
-                    let remaining_iterations = self.column_hints[column_hint_collection][hint].hint;
-                    for _ in 0..remaining_iterations {
-                        self.set_square(
-                            column_position,
-                            column_hint_collection,
-                            SpaceStatus::Filled,
-                        );
-                        if column_position != 0 {
-                            column_position -= 1;
-                        } else {
-                            finished_iter = true;
-                        }
-                    }
-                    if !finished_iter {
-                        self.set_square(
-                            column_position,
-                            column_hint_collection,
-                            SpaceStatus::NotFilled,
-                        );
-                        column_position -= 1;
-                    }
-                    self.column_hints[column_hint_collection][hint].fulfilled = true;
-                }
-            }
-        }
-    }
-
-    pub fn resolve_state(
-        state: &Option<SolveState>,
-        next_block: &SpaceStatus,
-    ) -> Option<SolveState> {
-        match (state, next_block) {
-            (None, SpaceStatus::Filled) => Some(SolveState::WithinBlock(1)),
-            (None, SpaceStatus::NotFilled) => Some(SolveState::UnfilledSpace),
-            (None, SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
-            (Some(_), SpaceStatus::Unknown) => Some(SolveState::EmptySpace),
-            (Some(val), SpaceStatus::Filled) => match val {
-                SolveState::BlockEnd => Some(SolveState::WithinBlock(1)),
-                SolveState::WithinBlock(len) => Some(SolveState::WithinBlock(len + 1)),
-                SolveState::EmptySpace => Some(SolveState::WithinBlock(1)),
-                SolveState::UnfilledSpace => Some(SolveState::WithinBlock(1)),
-            },
-            (Some(val), SpaceStatus::NotFilled) => match val {
-                SolveState::BlockEnd => Some(SolveState::BlockEnd),
-                SolveState::WithinBlock(_) => Some(SolveState::BlockEnd),
-                SolveState::EmptySpace => Some(SolveState::UnfilledSpace),
-                SolveState::UnfilledSpace => Some(SolveState::UnfilledSpace),
-            },
-        }
-    }
-
-    pub fn solve_strat_ended_rows(&mut self) {
-        for row in 0..self.board.len() {
-            let potential_hint = Nonogram::get_rightmost_unsolved_hint_for_row(row, &self);
-            let hint_size = match potential_hint {
-                Option::None => 0,
-                Some(val) => val.1.hint,
-            };
-            let mut previous_state: Option<SolveState> = Option::None;
-            let mut fillmode = false;
-
-            for column in 0..self.board[row].len() {
-                let column = self.board[row].len() - column - 1;
-                let mut current_state =
-                    Nonogram::resolve_state(&previous_state, &self.board[row][column]);
-                println!(
-                    "{}{} - {:?} -> {:?}",
-                    row, column, previous_state, current_state
-                );
-                match previous_state {
-                    Option::None => match current_state {
-                    Option::Some(SolveState::WithinBlock(val)) => fillmode = true,
-                    Option::None => fillmode = false,
-                    Option::Some(SolveState::BlockEnd) => fillmode = false,
-                    Option::Some(SolveState::EmptySpace) => fillmode = false,
-                    Option::Some(SolveState::UnfilledSpace) => fillmode = false,
-                    _ => fillmode = false,
-                    },
-                    Option::Some(SolveState::WithinBlock(val)) => match current_state {
-                        Option::Some(SolveState::WithinBlock(val)) => fillmode = true,
-                        Some(SolveState::EmptySpace) => fillmode = true,
-                        _ => fillmode = false,
-                    },
-                    _ => fillmode = false,
-                }
-                if fillmode {
-                    match &current_state {
-                        Option::Some(SolveState::WithinBlock(val)) => {
-                            if val < &(hint_size as usize) {
-                                self.board[row][column] = SpaceStatus::Filled
-                            }
-                            else
-                            {
-                                self.board[row][column] = SpaceStatus::NotFilled;
-                            }
-                        },
-                        Option::Some(SolveState::EmptySpace) => {
-                            match previous_state {
-                                Option::Some(SolveState::WithinBlock(val)) => {
-                                    if val < (hint_size as usize) {
-                                        self.board[row][column] = SpaceStatus::Filled;
-                                        current_state = Option::Some(SolveState::WithinBlock(val+1));
-                                    }
-                                    else
-                                    {
-                                        self.board[row][column] = SpaceStatus::NotFilled;
-                                    }
-                                },
-                                _ => self.board[row][column] = SpaceStatus::NotFilled
-                            }
-                        }
-                        _ => continue,
-                    }
-                }
-                previous_state = current_state;
-            }
-            println!();
-        }
-    }
-
-    pub fn draw_board_to_console(&self) {
+    pub fn draw_board_to_console(nonogram: &Nonogram) {
         let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
-        let max_column_hint_depth = self
+        let max_column_hint_depth = nonogram
             .column_hints
             .iter()
             .map(|column| column.len())
             .max()
             .unwrap_or(0);
-        let max_row_hint_depth = self
+        let max_row_hint_depth = nonogram
             .row_hints
             .iter()
             .map(|row| row.len())
@@ -291,7 +156,7 @@ impl Nonogram {
             }
             print!("   ");
             let hint_row_inverse = max_column_hint_depth - hint_row;
-            let mut printable_rows = self
+            let mut printable_rows = nonogram
                 .column_hints
                 .iter()
                 .enumerate()
@@ -308,27 +173,27 @@ impl Nonogram {
             }
             println!();
         }
-        for hint_column in 0..self.row_hints.len() {
-            let depth_difference = max_row_hint_depth - self.row_hints[hint_column].len();
+        for hint_column in 0..nonogram.row_hints.len() {
+            let depth_difference = max_row_hint_depth - nonogram.row_hints[hint_column].len();
             for _ in 0..depth_difference {
                 print!("   ");
             }
-            for hint in &self.row_hints[hint_column] {
+            for hint in &nonogram.row_hints[hint_column] {
                 print!(" {} ", hint.hint)
             }
-            for board_space in &self.board[hint_column] {
+            for board_space in &nonogram.board[hint_column] {
                 match board_space {
-                    SpaceStatus::Filled => {
+                    SpaceStatus::O => {
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)));
                         _ = write!(&mut stdout, "[O]");
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
                     }
-                    SpaceStatus::NotFilled => {
+                    SpaceStatus::X => {
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)));
                         _ = write!(&mut stdout, "[X]");
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
                     }
-                    SpaceStatus::Unknown => {
+                    SpaceStatus::Empty => {
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
                         _ = write!(&mut stdout, "[ ]");
                         _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
@@ -361,15 +226,7 @@ impl Hint {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SpaceStatus {
-    Filled,
-    NotFilled,
-    Unknown,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum SolveState {
-    WithinBlock(usize),
-    UnfilledSpace,
-    BlockEnd,
-    EmptySpace,
+    O,
+    X,
+    Empty,
 }
