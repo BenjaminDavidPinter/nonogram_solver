@@ -32,21 +32,41 @@ mod tests {
         assert_eq!(board.board[1][6], SpaceStatus::O);
         assert_eq!(test_hint.fulfilled, true);
     }
-    
+
     #[test]
     pub fn write_column_hint_to_board() {
         let mut board = get_test_nonogram();
         let mut test_hint = Hint::new(6);
         Nonogram::write_column_hint_to_board(&mut board, &mut test_hint, 4, 2);
-        
+
         assert_eq!(board.board[2][4], SpaceStatus::O);
         assert_eq!(board.board[3][4], SpaceStatus::O);
         assert_eq!(board.board[4][4], SpaceStatus::O);
         assert_eq!(board.board[5][4], SpaceStatus::O);
         assert_eq!(board.board[6][4], SpaceStatus::O);
         assert_eq!(board.board[7][4], SpaceStatus::O);
-        
+
         assert_eq!(test_hint.fulfilled, true);
+    }
+
+    #[test]
+    pub fn get_unsolved_row_hints(){
+        let board = get_test_nonogram();
+        let unsolved_hints = Nonogram::get_unsolved_row_hints(&board, 2);
+        assert_eq!(unsolved_hints.len(), 2);
+        assert_eq!(unsolved_hints[0].0, 0);
+        assert_eq!(unsolved_hints[0].1.hint, 1);
+        assert_eq!(unsolved_hints[1].0, 1);
+        assert_eq!(unsolved_hints[1].1.hint, 2);
+    }
+
+    #[test]
+    pub fn get_unsolved_column_hints(){
+        let board = get_test_nonogram();
+        let unsolved_hints = Nonogram::get_unsolved_column_hints(&board, 4);
+        assert_eq!(unsolved_hints.len(), 1);
+        assert_eq!(unsolved_hints[0].0, 0);
+        assert_eq!(unsolved_hints[0].1.hint, 4);
     }
 
     pub fn get_test_nonogram() -> Nonogram {

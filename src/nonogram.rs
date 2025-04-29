@@ -55,15 +55,22 @@ impl Nonogram {
         ];
     }
 
-    pub fn get_rightmost_unsolved_hint_for_row(
-        row: usize,
-        board: &Nonogram,
-    ) -> Option<(usize, &Hint)> {
-        board.row_hints[row]
+    pub fn get_unsolved_row_hints(nonogram: &Nonogram, row: usize) -> Vec<(usize, &Hint)>
+    {
+        nonogram.row_hints[row]
             .iter()
             .enumerate()
-            .rev()
-            .find(|x| !x.1.fulfilled)
+            .filter(|(_, x)| !x.fulfilled)
+            .collect()
+    }
+
+    pub fn get_unsolved_column_hints(nonogram: &Nonogram, column: usize) -> Vec<(usize, &Hint)>
+    {
+        nonogram.column_hints[column]
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| !x.fulfilled)
+            .collect()
     }
 
     pub fn write_row_hint_to_board(nonogram: &mut Nonogram, hint: &mut Hint, row: usize, starting_index: usize) {
