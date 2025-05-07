@@ -24,6 +24,18 @@ mod navigation_tests {
     }
 
     #[test]
+    pub fn get_first_filled_square_from_right_edge() {
+        let mut board = get_test_nonogram();
+        let mut test_hint = Hint::new(4);
+        Nonogram::write_row_hint_to_board(&mut board, &mut test_hint, 1, 3);
+        let distance = Nonogram::get_first_filled_square_from_right_edge(&board, 1);
+        match distance {
+            None => assert_eq!(true, false),
+            Some(val) => assert_eq!(val, 7)
+        }
+    }
+
+    #[test]
     pub fn locate_finished_columns() {
         let board = get_test_nonogram();
         let finished_columns = Nonogram::locate_finished_columns(&board);

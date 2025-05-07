@@ -66,6 +66,18 @@ impl Nonogram {
        return None;
     }
 
+    pub fn get_first_filled_square_from_right_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
+    {
+        for square_index in 0..nonogram.board[row].len() 
+        {
+            let inverted_index = nonogram.board[row].len() - square_index;
+            if nonogram.board[row][inverted_index-1] == SpaceStatus::O {
+                return Some(inverted_index);
+            }
+        }
+        return None;
+    }
+
     pub fn get_unsolved_row_hints(nonogram: &Nonogram, row: usize) -> Vec<(usize, &Hint)>
     {
         nonogram.row_hints[row]
