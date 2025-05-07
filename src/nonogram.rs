@@ -55,6 +55,17 @@ impl Nonogram {
         ];
     }
 
+    pub fn get_first_filled_square_from_left_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
+    {
+       for square_index in 0..nonogram.board[row].len()
+       {
+           if nonogram.board[row][square_index] == SpaceStatus::O {
+               return Some(square_index);
+           }
+       }
+       return None;
+    }
+
     pub fn get_unsolved_row_hints(nonogram: &Nonogram, row: usize) -> Vec<(usize, &Hint)>
     {
         nonogram.row_hints[row]
@@ -78,7 +89,6 @@ impl Nonogram {
             Nonogram::check_set(nonogram, row, column);
             nonogram.board[row][column] = SpaceStatus::O;
         }
-
         hint.fulfilled = true;
     }
 
@@ -87,7 +97,6 @@ impl Nonogram {
             Nonogram::check_set(nonogram, row, column);
             nonogram.board[row][column] = SpaceStatus::O;
         }
-
         hint.fulfilled = true;
     }
 
@@ -95,19 +104,10 @@ impl Nonogram {
         nonogram.row_hints
             .iter().enumerate()
             .filter(|(_, hints)| {
-                let mut total_occupied_space: usize = hints
+                nonogram.width == hints
                     .iter()
                     .map(|x| x.hint as usize)
-                    .sum();
-
-                total_occupied_space += hints.len() - 1;
-
-                if total_occupied_space == nonogram.width {
-                    return true;
-                }
-                else {
-                    return false;
-                }
+                    .sum::<usize>() + hints.len() - 1
             })
             .map(|(row_index, _)| row_index)
             .collect()
@@ -117,19 +117,10 @@ impl Nonogram {
         nonogram.column_hints
             .iter().enumerate()
             .filter(|(_, hints)| {
-                let mut total_occupied_space: usize = hints
+                nonogram.height == hints
                     .iter()
                     .map(|x| x.hint as usize)
-                    .sum();
-
-                total_occupied_space += hints.len() - 1;
-
-                if total_occupied_space == nonogram.width {
-                    return true;
-                }
-                else {
-                    return false;
-                }
+                    .sum::<usize>() + hints.len() - 1
             })
             .map(|(row_index, _)| row_index)
             .collect()
@@ -224,10 +215,6 @@ impl Hint {
             hint,
             fulfilled: false,
         }
-    }
-
-    pub fn fulfill(&mut self) {
-        self.fulfilled = true;
     }
 }
 
