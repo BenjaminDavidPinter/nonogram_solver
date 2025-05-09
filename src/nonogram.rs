@@ -24,7 +24,7 @@ impl Nonogram {
     }
 
     pub fn get_board_state(&self) -> [(SpaceStatus, usize); 3] {
-        return [
+        [
             (
                 SpaceStatus::O,
                 self.board
@@ -52,7 +52,7 @@ impl Nonogram {
                     .collect::<Vec<_>>()
                     .len(),
             ),
-        ];
+        ]
     }
 
     //TODO: Rewrite this as functional code
@@ -65,31 +65,19 @@ impl Nonogram {
                 return Some(inverted_index);
             }
         }
-        return None;
+        None
     }
 
     //TODO: Rewrite this as functional code
     pub fn get_first_filled_square_from_top_edge(nonogram: &Nonogram, column: usize) -> Option<usize> 
     {
-        for square_index in 0..nonogram.height
-        {
-            if nonogram.board[square_index][column] == SpaceStatus::O {
-                return Some(square_index);
-            }
-        }
-        return None;
+        (0..nonogram.height).find(|&square_index| nonogram.board[square_index][column] == SpaceStatus::O)
     }
 
     //TODO: Rewrite this as functional code
     pub fn get_first_filled_square_from_left_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
     {
-       for square_index in 0..nonogram.board[row].len()
-       {
-           if nonogram.board[row][square_index] == SpaceStatus::O {
-               return Some(square_index);
-           }
-       }
-       return None;
+       (0..nonogram.board[row].len()).find(|&square_index| nonogram.board[row][square_index] == SpaceStatus::O)
     }
 
     //TODO: Rewrite this as functional code
@@ -102,7 +90,7 @@ impl Nonogram {
                 return Some(inverted_index);
             }
         }
-        return None;
+        None
     }
 
     pub fn get_unsolved_row_hints(nonogram: &Nonogram, row: usize) -> Vec<(usize, &Hint)>
