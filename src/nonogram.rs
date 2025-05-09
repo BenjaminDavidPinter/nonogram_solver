@@ -56,7 +56,10 @@ impl Nonogram {
     }
 
     //TODO: Rewrite this as functional code
-    pub fn get_first_filled_square_from_bottom_edge(nonogram: &Nonogram, column: usize) -> Option<usize> {
+    /// # Get First Filled Bottom Edge
+    /// This function returns the index of the first filled square from the bottom edge of the
+    /// provided column
+    pub fn gffbe(nonogram: &Nonogram, column: usize) -> Option<usize> {
         for square_index in 0..nonogram.height
         {
             let inverted_index = nonogram.height - square_index;
