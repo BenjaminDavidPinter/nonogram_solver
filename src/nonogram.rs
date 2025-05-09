@@ -55,6 +55,20 @@ impl Nonogram {
         ];
     }
 
+    //TODO: Rewrite this as functional code
+    pub fn get_first_filled_square_from_bottom_edge(nonogram: &Nonogram, column: usize) -> Option<usize> {
+        for square_index in 0..nonogram.height
+        {
+            let inverted_index = nonogram.height - square_index;
+            if nonogram.board[inverted_index - 1][column] == SpaceStatus::O 
+            {
+                return Some(inverted_index);
+            }
+        }
+        return None;
+    }
+
+    //TODO: Rewrite this as functional code
     pub fn get_first_filled_square_from_top_edge(nonogram: &Nonogram, column: usize) -> Option<usize> 
     {
         for square_index in 0..nonogram.height
