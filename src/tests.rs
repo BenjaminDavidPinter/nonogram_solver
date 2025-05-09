@@ -1,7 +1,7 @@
 #[cfg(test)]
-
 mod navigation_tests {
     use crate::nonogram::*;
+    
     #[test]
     pub fn locate_finished_rows() {
         let board = get_test_nonogram();
@@ -9,6 +9,19 @@ mod navigation_tests {
 
         assert_eq!(finished_rows.len(), 1);
         assert_eq!(finished_rows[0], 7);
+    }
+
+    #[test]
+    pub fn get_first_filled_squre_from_top_edge() 
+    {
+        let mut board = get_test_nonogram();
+        let mut test_hint = Hint::new(4);
+        Nonogram::write_column_hint_to_board(&mut board, &mut test_hint, 1, 3);
+        let distance = Nonogram::get_first_filled_square_from_top_edge(&board, 1);
+        match distance {
+            None => assert_eq!(true, false),
+            Some(val) => assert_eq!(val, 3)
+        }
     }
 
     #[test]

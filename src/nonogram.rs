@@ -55,6 +55,18 @@ impl Nonogram {
         ];
     }
 
+    pub fn get_first_filled_square_from_top_edge(nonogram: &Nonogram, column: usize) -> Option<usize> 
+    {
+        for square_index in 0..nonogram.height
+        {
+            if nonogram.board[square_index][column] == SpaceStatus::O {
+                return Some(square_index);
+            }
+        }
+        return None;
+    }
+
+    //TODO: Rewrite this as functional code
     pub fn get_first_filled_square_from_left_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
     {
        for square_index in 0..nonogram.board[row].len()
@@ -66,6 +78,7 @@ impl Nonogram {
        return None;
     }
 
+    //TODO: Rewrite this as functional code
     pub fn get_first_filled_square_from_right_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
     {
         for square_index in 0..nonogram.board[row].len() 
