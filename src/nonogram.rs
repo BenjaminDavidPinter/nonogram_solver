@@ -56,9 +56,27 @@ impl Nonogram {
     }
 
     //TODO: Rewrite this as functional code
-    /// # Get First Filled Bottom Edge
-    /// This function returns the index of the first filled square from the bottom edge of the
-    /// provided column
+    /** # Get First Filled - Bottom Edge
+     * This function returns the index of the first filled square from the bottom edge of the
+     * provided column, zero indexed
+     * 
+     * In this example, gffbe column 2 returns index 1, not because it is one away from the
+     * bottom edge of the columnm, but because row 1 has the closest filled in block
+     *
+     * ```text
+     * |X|X|O| 
+     * | |X|O|
+     * |X|O|X|
+     * ```
+     * In the following example, gffbe column 2 returns index 0, because it is the closest filled
+     * in index to the bottom of the column
+     *
+     * ```text
+     * |X|X|O|
+     * | | | |
+     * | | | |
+     * ```
+    */ 
     pub fn gffbe(nonogram: &Nonogram, column: usize) -> Option<usize> {
         for square_index in 0..nonogram.height
         {
