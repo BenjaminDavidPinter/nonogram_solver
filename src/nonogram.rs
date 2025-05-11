@@ -90,7 +90,27 @@ impl Nonogram {
     }
 
     //TODO: Rewrite this as functional code
-    pub fn get_first_filled_square_from_top_edge(nonogram: &Nonogram, column: usize) -> Option<usize> 
+    /** # Get First Filled - Top Edge
+     * This function returns the index of the first filled square from the top edge of the
+     * provided column, zero indexed
+     * 
+     * In this example, gffte column 1 returns index 2, not because it is one away from the
+     * bottom edge of the columnm, but because row 2 has the closest filled in block
+     *
+     * ```text
+     * |X|X|O| 
+     * | |X|O|
+     * |X|O|X|
+     * ```
+     * In the following example, gffte column 2 returns index 0, because it is the closest filled
+     * in index to the bottom of the column
+     *
+     * ```text
+     * |X|X|O|
+     * | | | |
+     * | | |O|
+     * ```
+    */ pub fn gffte(nonogram: &Nonogram, column: usize) -> Option<usize> 
     {
         (0..nonogram.height).find(|&square_index| nonogram.board[square_index][column] == SpaceStatus::O)
     }
