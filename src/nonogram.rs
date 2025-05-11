@@ -83,7 +83,7 @@ impl Nonogram {
             let inverted_index = nonogram.height - square_index;
             if nonogram.board[inverted_index - 1][column] == SpaceStatus::O 
             {
-                return Some(inverted_index);
+                return Some(inverted_index - 1);
             }
         }
         None

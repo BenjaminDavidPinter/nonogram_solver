@@ -25,7 +25,18 @@ mod navigation_tests {
     }
 
     #[test]
-    pub fn get_first_filled_square_from_bottom_edge()
+    pub fn gffbe_none() 
+    {
+        let board = get_test_nonogram();
+        let distance = Nonogram::gffbe(&board, 1);
+        match distance {
+            None => assert_eq!(true, true),
+            Some(_) => assert_eq!(true, false)
+        }
+    }
+
+    #[test]
+    pub fn gffbe_mid()
     {
         let mut board = get_test_nonogram();
         let mut test_hint = Hint::new(4);
@@ -33,7 +44,20 @@ mod navigation_tests {
         let distance = Nonogram::gffbe(&board, 1);
         match distance {
             None => assert_eq!(true, false),
-            Some(val) => assert_eq!(val, 7)
+            Some(val) => assert_eq!(val, 6)
+        }
+    }
+
+    #[test]
+    pub fn gffbe_edge() 
+    {
+        let mut board = get_test_nonogram(); 
+        let mut test_hint = Hint::new(1);
+        Nonogram::write_column_hint_to_board(&mut board, &mut test_hint, 1, 0);
+        let distance = Nonogram::gffbe(&board, 1);
+        match distance {
+            None => assert_eq!(true, false),
+            Some(val) => assert_eq!(val, 0),
         }
     }
 
