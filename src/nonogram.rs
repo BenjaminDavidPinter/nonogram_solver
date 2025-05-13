@@ -110,13 +110,34 @@ impl Nonogram {
      * | | | |
      * | | |O|
      * ```
-    */ pub fn gffte(nonogram: &Nonogram, column: usize) -> Option<usize> 
+    */ 
+    pub fn gffte(nonogram: &Nonogram, column: usize) -> Option<usize> 
     {
         (0..nonogram.height).find(|&square_index| nonogram.board[square_index][column] == SpaceStatus::O)
     }
 
-    //TODO: Rewrite this as functional code
-    pub fn get_first_filled_square_from_left_edge(nonogram: &Nonogram, row: usize) -> Option<usize> 
+    /** # Get First Filled - Left Edge
+     * This function returns the index of the first filled square from the left edge of the
+     * provided row, zero indexed
+     * 
+     * In this example, gffle row 0 returns index 2, not because it is two away from the
+     * left edge of the columnm, but because column 2 has the closest filled in block
+     *
+     * ```text
+     * |X|X|O| 
+     * | |X|O|
+     * |X|O|X|
+     * ```
+     * In the following example, gffle row 0 returns index 0, because it is the closest filled
+     * in index to the left of the row
+     *
+     * ```text
+     * |0|X|O|
+     * | | | |
+     * | | |O|
+     * ```
+    */ 
+    pub fn gffle(nonogram: &Nonogram, row: usize) -> Option<usize> 
     {
        (0..nonogram.board[row].len()).find(|&square_index| nonogram.board[row][square_index] == SpaceStatus::O)
     }

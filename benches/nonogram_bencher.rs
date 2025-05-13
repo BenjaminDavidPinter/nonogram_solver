@@ -1,15 +1,23 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main, PlotConfiguration, AxisScale};
 use nonogram_solver::nonogram::{Hint, Nonogram};
 
-/*
-        1
-     3  1  1
-  2 [x][x][ ]
-1 1 [x][ ][x]
-  2 [x][x][ ]
-*/
+let plot_config = PlotConfiguration::default()
+    .summary_scale(AxisScale::Logarithmic);
 
-pub fn get_unsolved_column_hints(c: &mut Criterion) {
+pub fn gffte(c: &mut Criterion) {
+    let mut board = get_test_nonogram();
+    let mut hint = Hint::new(4);
+
+    Nonogram::write_column_hint_to_board(&mut board, &mut hint, 0, 0);
+
+    c.bench_function("gffte", |b| {
+        b.iter(|| {
+            let _distance = Nonogram::gffte(&board, 0);
+        });
+    });
+}
+
+pub fn guch(c: &mut Criterion) {
     let mut board = get_test_nonogram();
 
     c.bench_function("get_unsolved_column_hints", |b| {
@@ -19,7 +27,7 @@ pub fn get_unsolved_column_hints(c: &mut Criterion) {
     });
 }
 
-pub fn get_unsolved_row_hints(c: &mut Criterion) {
+pub fn gurh(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
    c.bench_function("get_unsolved_row_hints", |b| {
@@ -29,7 +37,7 @@ pub fn get_unsolved_row_hints(c: &mut Criterion) {
    });
 }
 
-pub fn locate_finished_rows(c: &mut Criterion) {
+pub fn gfr(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
    c.bench_function("locate_finished_rows", |b| {
@@ -39,7 +47,7 @@ pub fn locate_finished_rows(c: &mut Criterion) {
    });
 }
 
-pub fn locate_finished_columns(c: &mut Criterion) {
+pub fn gfc(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
    c.bench_function("locate_finished_columns", |b| {
@@ -78,5 +86,5 @@ pub fn get_test_nonogram() -> Nonogram {
    )
 }
 
-criterion_group!(benches, get_unsolved_column_hints, get_unsolved_row_hints, locate_finished_columns, locate_finished_rows);
+criterion_group!(benches, gffte, guch, gurh, gfc, gfr);
 criterion_main!(benches);
