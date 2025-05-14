@@ -1,9 +1,6 @@
 use criterion::{Criterion, criterion_group, criterion_main, PlotConfiguration, AxisScale};
 use nonogram_solver::nonogram::{Hint, Nonogram};
 
-let plot_config = PlotConfiguration::default()
-    .summary_scale(AxisScale::Logarithmic);
-
 pub fn gffte(c: &mut Criterion) {
     let mut board = get_test_nonogram();
     let mut hint = Hint::new(4);
@@ -20,7 +17,7 @@ pub fn gffte(c: &mut Criterion) {
 pub fn guch(c: &mut Criterion) {
     let mut board = get_test_nonogram();
 
-    c.bench_function("get_unsolved_column_hints", |b| {
+    c.bench_function("guch", |b| {
         b.iter(|| {
             Nonogram::get_unsolved_column_hints(&board, 1); // The function you're benchmarking
         });
@@ -30,7 +27,7 @@ pub fn guch(c: &mut Criterion) {
 pub fn gurh(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
-   c.bench_function("get_unsolved_row_hints", |b| {
+   c.bench_function("gurh", |b| {
       b.iter(|| {
          Nonogram::get_unsolved_row_hints(&board, 1); // The function you're benchmarking
       });
@@ -40,7 +37,7 @@ pub fn gurh(c: &mut Criterion) {
 pub fn gfr(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
-   c.bench_function("locate_finished_rows", |b| {
+   c.bench_function("gfr", |b| {
       b.iter(|| {
          Nonogram::locate_finished_rows(&board); // The function you're benchmarking
       });
@@ -50,7 +47,7 @@ pub fn gfr(c: &mut Criterion) {
 pub fn gfc(c: &mut Criterion) {
    let mut board = get_test_nonogram();
 
-   c.bench_function("locate_finished_columns", |b| {
+   c.bench_function("gfc", |b| {
       b.iter(|| {
          Nonogram::locate_finished_columns(&board); // The function you're benchmarking
       });
